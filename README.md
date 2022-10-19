@@ -1,0 +1,2 @@
+# EPD_PixelJitter_BMP_JPG
+基于GXEPD2和TJpg_Decoder的像素抖动例程，可以处理BMP和jpg图片
