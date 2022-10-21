@@ -198,28 +198,36 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
               }
               else // 位深为24，16，8位 使用像素抖动绘制
               {
+                //亮度对比度调节
+                /*float B = 0.1;
+                  float C = -0.1;
+                  float K = tan((45 + 44 * C) / 180 * PI);
+                  color = (color - 127.5 * (1 - B)) * K + 127.5 * (1 + B);
+                  if (color > 255) color = 255;
+                  else if (color < 0) color = 0;*/
                 //分段抖动，每3行抖动一次
                 bmp8[x + col][yrow1] = color;
                 if (x + col == (width - 1)) //X轴填满，换行
                 {
                   yrow1++;       // Y轴进位
                   // 首次需要存入6行数据再抖动 ，中间每次在012后面存入3行
-                  if (yrow1 == 6 || (flip == 1 && yrow == 0) || (flip == 0 && yrow == height - 1))
+                  if (yrow1 == 6 || (flip == 1 && yrow == 0) || (flip == 0 && yrow == (height - 1)))
                   {
                     int err;
                     uint8_t y_max0 = 5; //首次抖动0-4行 其余抖动1-4行
                     if (flip == 1 && yrow == 0)
                       y_max0 = yrow1; //到最后时将剩余行都一起抖动
-                    else if (flip == 0 && yrow == height - 1)
+                    else if (flip == 0 && yrow == (height - 1))
                       y_max0 = yrow1; //到最后时将剩余行都一起抖动
 
                     //Serial.print("y_max0："); Serial.println(y_max0);
                     yrow1 = 2;   // Y轴进位回到第3行，012
+
                     for (uint16_t y = 0; y < y_max0; y++) // height width
                     {
                       for (uint16_t x = 0; x < width; x++)
                       {
-                        iif ((ddxhFirst == 1) || (y != 0)) //第一次对01234行抖动处理 后面至抖动1234行
+                        if (ddxhFirst == 1 || y != 0) //第一次对01234行抖动处理 后面至抖动1234行
                         {
                           if (bmp8[x][y] > 127) {
                             err = bmp8[x][y] - 255;
@@ -228,32 +236,24 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                             err = bmp8[x][y] - 0;
                             bmp8[x][y] = 0;
                           }
-                          if ((y != (height - 1)) && (x != 0) && (x != (width - 1)))
-                          {
-                            bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
-                            bmp8[x - 1][y + 1] = colorThresholdLimit(bmp8[x - 1][y + 1] , (err * 3) / 16);
-                            bmp8[x + 0][y + 1] = colorThresholdLimit(bmp8[x + 0][y + 1] , (err * 5) / 16);
-                            bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
-                          }
+                          if (x != width - 1)                      bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
+                          if (x != 0 && y != (height - 1))         bmp8[x - 1][y + 1] = colorThresholdLimit(bmp8[x - 1][y + 1] , (err * 3) / 16);
+                          if (y != height - 1)                     bmp8[x + 0][y + 1] = colorThresholdLimit(bmp8[x + 0][y + 1] , (err * 5) / 16);
+                          if (x != width - 1 && y != (height - 1)) bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
                         }
                       }
                       ddxhFirst = 0; //首行结束
                     }//像素抖动结束
 
-                    //绘制像素点 bmp[x][y] x轴绘制需全部完 y轴只绘制前5行
-                    if (flip == 1 && yrow != 0)
-                      yrow_old = yrow + 5; //bmp图片Y轴绘制初始位置
-                    else if (flip == 0 && yrow != height - 1)
-                      yrow_old = yrow - 5; //bmp图片Y轴绘制初始位置
-
-                    //Serial.println("绘制像素点");
-                    //Serial.println("");
-                    uint8_t y_max1 = 5; //平时绘制5行
-                    if (flip == 1 && yrow == 0)
-                      y_max1 = yrow_old + 1; //到最后时全部绘制完
-                    else if (flip == 0 && yrow == height - 1)
-                      y_max1 = yrow_old + 1; //到最后时全部绘制完
-
+                    // 绘制像素点 bmp[x][y] x轴绘制需全部完 y轴只绘制前5行
+                    // bmp图片Y轴绘制初始位置
+                    if (flip == 1 && yrow != 0)                 yrow_old = yrow + 5;
+                    else if (flip == 0 && yrow != (height - 1)) yrow_old = yrow - 5;//bmp图片Y轴绘制初始位置
+                    uint8_t y_max1 = 5; // 平时绘制5行
+                    // 到最后时全部绘制完
+                    if (flip == 1 && yrow == 0)                 y_max1 = yrow_old + 1;
+                    else if (flip == 0 && yrow == (height - 1)) y_max1 = height - yrow_old;
+                    //Serial.print("yrow:"); Serial.println(yrow);
                     for (uint16_t y = 0; y < y_max1; y++)
                     {
                       for (uint16_t x = 0; x < width; x++)
@@ -261,12 +261,14 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                         /*Serial.print("x:" + String(x));
                           Serial.print(" y:" + String(y));
                           Serial.println(" bmp8:" + String(bmp8[x][y]));*/
-                        //Serial.print("yrow_old:"); Serial.println(yrow_old);
+                        /*if (yrow_old > 110) {
+                          Serial.print("yrow_old:"); Serial.println(yrow_old);
+                          }*/
                         display.drawPixel(x, yrow_old, bmp8[x][y]);
                       }
                       //Y轴进位
-                      if (flip == 1 && yrow_old != 0)       yrow_old--;
-                      else if (flip == 0 && yrow != height - 1) yrow_old++;
+                      if (flip == 1 && yrow_old != 0)            yrow_old--;
+                      else if (flip == 0 && yrow_old != (height - 1)) yrow_old++;
                     }
                     // Serial.println(" ");
                     //display.setPartialWindow(0, 0, display.width(), display.height());
