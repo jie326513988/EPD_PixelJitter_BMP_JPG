@@ -53,7 +53,12 @@ void setup()
   u8g2Fonts.setBackgroundColor(baise);     // 设置背景色
   display.setTextColor(GxEPD_BLACK);       // 设置字体颜色
   u8g2Fonts.setFont(chinese_gb2312);       // 加载字体
-  BW_refresh();
+
+  display.init(0, 0, 10, 1);
+  display.setFullWindow();
+  display.firstPage();
+  display.nextPage();
+
   bool fsOK;
   fsOK = LittleFS.begin();
   if (!fsOK)
@@ -77,14 +82,14 @@ void setup()
 
 void loop()
 {
-  display_partialLine(0, "抖动源码来至");
+  /*display_partialLine(0, "抖动源码来至");
   display_partialLine(1, "oshwhub.com/ZERO--0/epaper_card");
   for (uint8_t i = 3; i > 0; i--)
   {
     display_partialLine(2, "即将开始抖动显示图片 " + String(i));
     delay(i * 300);
   }
-
+  BW_refresh();*/
   //寻找并显示根目录下所有BMP图片
   bool bmpFileState = 0;
   Dir dir = LittleFS.openDir("/");   // 建立"目录"对象
@@ -98,7 +103,7 @@ void loop()
       Serial.println(name);
       //文件位置，文件名称，坐标X，坐标Y，颜色，是否局部刷新，是否覆盖刷新
       drawBitmapFromSpiffs_Buffered(&LittleFS, name, 0, 0, 1, 1, 0);
-      delay(1000);
+      delay(2000);
       Serial.println("");
     }
   }
