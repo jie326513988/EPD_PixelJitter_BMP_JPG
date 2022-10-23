@@ -61,7 +61,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
     // 数组指针的内存分配
     uint8_t (*bmp8)[6];
     bmp8 = new uint8_t[width][6];
-    
+
     boolean ddxhFirst = 1;                   // 抖动循环的首次状态
     uint16_t yrow1 = 0;                      // Y轴移位
     uint16_t yrow_old = 0;                   // 绘制像素点时 初始Y轴存储
@@ -212,16 +212,15 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                   if (yrow1 == 6 || (flip == 1 && yrow == 0) || (flip == 0 && yrow == (height - 1)))
                   {
                     int err;
-                    uint8_t y_max0 = 5; //首次抖动0-4行 其余抖动1-4行
-                    if (flip == 1 && yrow == 0)
-                      y_max0 = yrow1; //到最后时将剩余行都一起抖动
-                    else if (flip == 0 && yrow == (height - 1))
-                      y_max0 = yrow1; //到最后时将剩余行都一起抖动
+                    uint8_t y_max0 = 4; //首次抖动0-4行 其余抖动1-4行
+                    //到最后时将剩余行都一起抖动
+                    if (flip == 1 && yrow == 0)                 y_max0 = yrow1; 
+                    else if (flip == 0 && yrow == (height - 1)) y_max0 = yrow1; 
 
                     //Serial.print("y_max0："); Serial.println(y_max0);
                     yrow1 = 2;   // Y轴进位回到第3行，012
 
-                    for (uint16_t y = 0; y < y_max0; y++) // height width
+                    for (uint16_t y = 0; y <= y_max0; y++) // height width
                     {
                       for (uint16_t x = 0; x < width; x++)
                       {
@@ -234,10 +233,10 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                             err = bmp8[x][y] - 0;
                             bmp8[x][y] = 0;
                           }
-                          if (x != width - 1)                      bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
-                          if (x != 0 && y != (height - 1))         bmp8[x - 1][y + 1] = colorThresholdLimit(bmp8[x - 1][y + 1] , (err * 3) / 16);
-                          if (y != height - 1)                     bmp8[x + 0][y + 1] = colorThresholdLimit(bmp8[x + 0][y + 1] , (err * 5) / 16);
-                          if (x != width - 1 && y != (height - 1)) bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
+                          if (x != width - 1)  bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
+                          if (x != 0)          bmp8[x - 1][y + 1] = colorThresholdLimit(bmp8[x - 1][y + 1] , (err * 3) / 16);
+                          if (1)               bmp8[x + 0][y + 1] = colorThresholdLimit(bmp8[x + 0][y + 1] , (err * 5) / 16);
+                          if (x != width - 1 ) bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
                         }
                       }
                       ddxhFirst = 0; //首行结束
