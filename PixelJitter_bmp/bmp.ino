@@ -61,9 +61,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
     // 数组指针的内存分配
     uint8_t (*bmp8)[6];
     bmp8 = new uint8_t[width][6];
-
-    uint8_t ddxh_max = height / 3;           // 抖动循环次数
-    uint8_t ddxh_count = 6;                  // 抖动循环存入数量 首次6 中间4 尾剩余
+    
     boolean ddxhFirst = 1;                   // 抖动循环的首次状态
     uint16_t yrow1 = 0;                      // Y轴移位
     uint16_t yrow_old = 0;                   // 绘制像素点时 初始Y轴存储
