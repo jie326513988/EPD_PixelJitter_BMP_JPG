@@ -205,7 +205,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                   else if (color < 0) color = 0;*/
                 //分段抖动，每3行抖动一次
                 bmp8[x + col][yrow1] = color;
-                if (x + col == (width - 1)) //X轴填满，换行
+                if (x + col == (w - 1)) //X轴填满，换行
                 {
                   yrow1++;       // Y轴进位
                   // 首次需要存入6行数据再抖动 ，中间每次在012后面存入3行
