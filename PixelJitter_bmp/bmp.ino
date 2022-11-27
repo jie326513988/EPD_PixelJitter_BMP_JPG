@@ -33,7 +33,10 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
     uint32_t headerSize = read32(file);   // 标题大小
     int32_t width  = read32(file);       // 图像宽度
     int32_t height = read32(file);       // 图像高度
-    //width = abs(width); height = abs(height);
+    uint16_t planes = read16(file);  // 平面
+    uint16_t depth = read16(file);   // 每像素位数
+    uint32_t format = read32(file);  // 格式
+
     Serial.print("width0:"); Serial.println(width);
     Serial.print("height0:"); Serial.println(height);
 
@@ -53,11 +56,6 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
       esp_sleep(0); //永久休眠
     }
 
-    uint16_t planes = read16(file);  // 平面
-    uint16_t depth = read16(file);   // 每像素位数
-    uint32_t format = read32(file);  // 格式
-
-    //uint8_t bmp8[width][6];                  // 创建抖动缓存数组
     // 数组指针的内存分配
     uint8_t (*bmp8)[6];
     bmp8 = new uint8_t[width][6];
@@ -93,8 +91,8 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
         uint16_t red, green, blue;
         bool whitish, colored;
         if (depth == 1) with_color = false;
-        /*if (depth <= 8) //8位颜色及以下使用调色板,没什么卵用
-          {
+        if (depth <= 8) //8位颜色及以下使用调色板,如不使用有些图会翻转颜色
+        {
           Serial.print("depth:"); Serial.print(depth);
           if (depth < 8) bitmask >>= depth;
           //file.seek(54); //调色板始终 @ 54
@@ -113,11 +111,11 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
             color_palette_buffer[pn / 8] |= colored << pn % 8;
             rgb_palette_buffer[pn] = ((red & 0xF8) << 8) | ((green & 0xFC) << 3) | ((blue & 0xF8) >> 3);
           }
-          }*/
+        }
         display.init(0, 0, 10, 1);
         if (partial_update) display.setPartialWindow(x, y, w, h);
         else display.setFullWindow();
-        //BW_refresh();
+
         display.firstPage();
         do
         {
@@ -180,6 +178,20 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                   break;
                 case 1:
                 case 4:
+                  {
+                    if (0 == in_bits)
+                    {
+                      in_byte = input_buffer[in_idx++];
+                      in_bits = 8;
+                    }
+                    uint16_t pn = (in_byte >> bitshift) & bitmask;
+                    whitish = mono_palette_buffer[pn / 8] & (0x1 << pn % 8);
+                    colored = color_palette_buffer[pn / 8] & (0x1 << pn % 8);
+                    in_byte <<= depth;
+                    in_bits -= depth;
+                    color = rgb_palette_buffer[pn];
+                  }
+                  break;
                 case 8:
                   color = input_buffer[in_idx++];
                   break;
@@ -190,7 +202,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
               if (depth == 1) // 位深为1位，直接绘制
               {
                 if (whitish) color = GxEPD_WHITE;
-                else if (colored && with_color) color = GxEPD_COLORED;
+                //else if (colored && with_color) color = GxEPD_COLORED;
                 else color = GxEPD_BLACK;
                 display.drawPixel(x + col, yrow, color); // 原始
               }
@@ -214,8 +226,8 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                     int err;
                     uint8_t y_max0 = 4; //首次抖动0-4行 其余抖动1-4行
                     //到最后时将剩余行都一起抖动
-                    if (flip == 1 && yrow == 0)                 y_max0 = yrow1; 
-                    else if (flip == 0 && yrow == (height - 1)) y_max0 = yrow1; 
+                    if (flip == 1 && yrow == 0)                 y_max0 = yrow1;
+                    else if (flip == 0 && yrow == (height - 1)) y_max0 = yrow1;
 
                     //Serial.print("y_max0："); Serial.println(y_max0);
                     yrow1 = 2;   // Y轴进位回到第3行，012
@@ -233,10 +245,10 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                             err = bmp8[x][y] - 0;
                             bmp8[x][y] = 0;
                           }
-                          if (x != width - 1)  bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
+                          if (x != w - 1)  bmp8[x + 1][y + 0] = colorThresholdLimit(bmp8[x + 1][y + 0] , (err * 7) / 16);
                           if (x != 0)          bmp8[x - 1][y + 1] = colorThresholdLimit(bmp8[x - 1][y + 1] , (err * 3) / 16);
                           if (1)               bmp8[x + 0][y + 1] = colorThresholdLimit(bmp8[x + 0][y + 1] , (err * 5) / 16);
-                          if (x != width - 1 ) bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
+                          if (x != w - 1 ) bmp8[x + 1][y + 1] = colorThresholdLimit(bmp8[x + 1][y + 1] , (err * 1) / 16);
                         }
                       }
                       ddxhFirst = 0; //首行结束
