@@ -1,7 +1,7 @@
 //请注意，BMP位图是在屏幕物理方向的物理位置绘制的
 #define input_buffer_pixels 10 // 可能会影响性能，数值越大越费动态内存
-#define max_row_width 300       // 限制最大尺寸 只能为8的整数
-#define max_palette_pixels 300  // 限制最大尺寸 只能为8的整数
+#define max_row_width 500       // 限制最大尺寸 只能为8的整数
+#define max_palette_pixels 500  // 限制最大尺寸 只能为8的整数
 
 //文件位置，是否在图片下方显示文字，文件名称，坐标X，坐标Y，颜色，是否局部刷新，是否覆盖刷新
 void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y, bool with_color, bool partial_update, bool overwrite)
@@ -130,7 +130,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
             uint8_t in_bits = 0; // for depth <= 8
             int16_t color = GxEPD_WHITE;
             file.seek(rowPosition);
-            for (uint16_t col = 0; col < w; col++) // 对于每个像素
+            for (uint16_t col = 0; col < w; col++) // 对于每个像素 //width 修补 w
             {
               // 是时候读取更多像素数据了？
               if (in_idx >= in_bytes) // 好的，24位也完全匹配（大小是3的倍数）
@@ -217,7 +217,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                   else if (color < 0) color = 0;*/
                 //分段抖动，每3行抖动一次
                 bmp8[x + col][yrow1] = color;
-                if (x + col == (w - 1)) //X轴填满，换行
+                if (x + col == (w - 1)) //X轴填满，换行 //width 修补 w
                 {
                   yrow1++;       // Y轴进位
                   // 首次需要存入6行数据再抖动 ，中间每次在012后面存入3行
@@ -234,7 +234,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
 
                     for (uint16_t y = 0; y <= y_max0; y++) // height width
                     {
-                      for (uint16_t x = 0; x < width; x++)
+                      for (uint16_t x = 0; x < w; x++) //width 修补 w
                       {
                         if (ddxhFirst == 1 || y != 0) //第一次对01234行抖动处理 后面至抖动1234行
                         {
@@ -265,7 +265,7 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                     //Serial.print("yrow:"); Serial.println(yrow);
                     for (uint16_t y = 0; y < y_max1; y++)
                     {
-                      for (uint16_t x = 0; x < width; x++)
+                      for (uint16_t x = 0; x < w; x++) //width 修补 w
                       {
                         /*Serial.print("x:" + String(x));
                           Serial.print(" y:" + String(y));
@@ -279,11 +279,8 @@ void drawBitmapFromSpiffs_Buffered(FS *fs, String filename, int16_t x, int16_t y
                       if (flip == 1 && yrow_old != 0)            yrow_old--;
                       else if (flip == 0 && yrow_old != (height - 1)) yrow_old++;
                     }
-                    // Serial.println(" ");
-                    //display.setPartialWindow(0, 0, display.width(), display.height());
-                    //display.nextPage();
                     //bmp8 4、5行移到开头
-                    for (uint16_t x = 0; x < width; x++)
+                    for (uint16_t x = 0; x < w; x++) //width 修补 w
                     {
                       bmp8[x][0] = bmp8[x][4];
                       bmp8[x][1] = bmp8[x][5];
